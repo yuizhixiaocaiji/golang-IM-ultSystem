@@ -1,5 +1,10 @@
 package main
 
-func main() {
+import (
+	"ginchat/router"
+)
 
+func main() {
+	r := router.Router()
+	r.Run()
 }
