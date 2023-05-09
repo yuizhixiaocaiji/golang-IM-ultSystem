@@ -1,11 +1,11 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import "gorm.io/gorm"
 
 type UserBasic struct {
 	gorm.Model
 	Name          string
-	PassWord      string
+	Password      string
 	Phone         string
 	Email         string
 	Identity      string
