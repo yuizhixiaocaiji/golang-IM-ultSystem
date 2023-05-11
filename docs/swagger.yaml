@@ -33,6 +33,21 @@ paths:
       summary: 新增用户
       tags:
       - 用户模块
+  /user/deleteUser:
+    get:
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      responses:
+        "200":
+          description: code", "message"}
+          schema:
+            type: string
+      summary: 删除用户
+      tags:
+      - 用户模块
   /user/getUserList:
     get:
       responses:
@@ -41,6 +56,29 @@ paths:
           schema:
             type: string
       summary: 所有用户
+      tags:
+      - 用户模块
+  /user/updateUser:
+    post:
+      parameters:
+      - description: id
+        in: formData
+        name: id
+        type: string
+      - description: name
+        in: formData
+        name: name
+        type: string
+      - description: password
+        in: formData
+        name: password
+        type: string
+      responses:
+        "200":
+          description: code", "message"}
+          schema:
+            type: string
+      summary: 修改用户
       tags:
       - 用户模块
 swagger: "2.0"

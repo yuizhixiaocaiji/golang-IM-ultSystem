@@ -42,3 +42,7 @@ func CreateUser(user *UserBasic) *gorm.DB {
 func DeleteUser(user *UserBasic) *gorm.DB {
 	return utils.DB.Delete(user)
 }
+
+func UpdateUser(user *UserBasic) *gorm.DB {
+	return utils.DB.Model(user).Updates(UserBasic{Name: user.Name, Password: user.Password})
+}
