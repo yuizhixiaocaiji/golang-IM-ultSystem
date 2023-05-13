@@ -10,8 +10,8 @@ type UserBasic struct {
 	gorm.Model
 	Name          string `gorm:"column:name" json:"name"`
 	Password      string `gorm:"column:password" json:"password"`
-	Phone         string `gorm:"column:phone" json:"phone"`
-	Email         string `gorm:"column:email" json:"email"`
+	Phone         string `valid:"matches(^1[3-9]{1}\\d{9}$)" gorm:"column:phone" json:"phone"`
+	Email         string `valid:"email" gorm:"column:email" json:"email"`
 	Identity      string `gorm:"column:identity" json:"identity"`
 	ClientIp      string `gorm:"column:client_ip" json:"client_ip"`
 	ClientPort    string `gorm:"column:client_port" json:"client_port"`
@@ -44,5 +44,5 @@ func DeleteUser(user *UserBasic) *gorm.DB {
 }
 
 func UpdateUser(user *UserBasic) *gorm.DB {
-	return utils.DB.Model(user).Updates(UserBasic{Name: user.Name, Password: user.Password})
+	return utils.DB.Model(user).Updates(UserBasic{Name: user.Name, Password: user.Password, Phone: user.Phone, Email: user.Email})
 }
