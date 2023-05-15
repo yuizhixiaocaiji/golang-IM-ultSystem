@@ -65,6 +65,42 @@ func CreateUser(c *gin.Context) {
 	})
 }
 
+// FindUserByNameAndPwd
+// @Summary 所有用户
+// @Tags 用户模块
+// @param name query string false "用户名"
+// @param password query string false "密码"
+// @Success 200 {string} json{"code", "message"}
+// @Router /user/getUserList [get]
+func FindUserByNameAndPwd(c *gin.Context) {
+	data := models.UserBasic{}
+	name := c.Query("name")
+	password := c.Query("password")
+	user := models.FindUserByName(name)
+
+	if user.Name == "" {
+		c.JSON(200, gin.H{
+			"message": "该用户不存在",
+		})
+		return
+	}
+	fmt.Println(user)
+	flag := utils.ValidPassword(password, user.Salt, user.Password)
+	if !flag {
+		c.JSON(200, gin.H{
+			"message": "密码不正确",
+		})
+		return
+	}
+	pwd := utils.MakePassword(password, user.Salt)
+
+	data = models.FindUserByNameAndPwd(name, pwd)
+
+	c.JSON(200, gin.H{
+		"message": data,
+	})
+}
+
 // DeleteUser
 // @Summary 删除用户
 // @Tags 用户模块
