@@ -3,8 +3,10 @@ package service
 import (
 	"fmt"
 	"ginchat/models"
+	"ginchat/utils"
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
+	"math/rand"
 	"strconv"
 )
 
@@ -36,6 +38,9 @@ func CreateUser(c *gin.Context) {
 	password := c.Query("password")
 	rePassword := c.Query("rePassword")
 
+	salt := fmt.Sprintf("%06d", rand.Int31())
+	user.Salt = salt
+
 	data := models.FindUserByName(user.Name)
 	if data.Name != "" {
 		c.JSON(-1, gin.H{
@@ -50,7 +55,9 @@ func CreateUser(c *gin.Context) {
 		})
 		return
 	}
-	user.Password = password
+
+	user.Password = utils.MakePassword(password, salt)
+
 	models.CreateUser(&user)
 
 	c.JSON(200, gin.H{

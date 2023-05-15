@@ -15,6 +15,7 @@ type UserBasic struct {
 	Identity      string `gorm:"column:identity" json:"identity"`
 	ClientIp      string `gorm:"column:client_ip" json:"client_ip"`
 	ClientPort    string `gorm:"column:client_port" json:"client_port"`
+	Salt          string `gorm:"column:salt" json:"salt"`
 	LoginTime     uint64 `gorm:"column:login_time" json:"login_time"`
 	HeartbeatTime uint64 `gorm:"column:heartbeat_time" json:"heartbeat_time"`
 	LoginOutTime  uint64 `gorm:"column:login_out_time" json:"login_out_time"`
@@ -37,7 +38,7 @@ func GetUserList() []*UserBasic {
 
 func FindUserByName(name string) UserBasic {
 	user := UserBasic{}
-	utils.DB.Where("name = ?", name).First(user)
+	utils.DB.Where("name = ?", name).First(&user)
 	return user
 }
 
