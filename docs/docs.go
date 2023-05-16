@@ -97,6 +97,20 @@ const docTemplate = `{
                     "用户模块"
                 ],
                 "summary": "所有用户",
+                "responses": {
+                    "200": {
+                        "description": "code\", \"message\"}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "用户模块"
+                ],
+                "summary": "所有用户",
                 "parameters": [
                     {
                         "type": "string",

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ginchat/utils"
 	"gorm.io/gorm"
+	"time"
 )
 
 type UserBasic struct {
@@ -45,6 +46,11 @@ func FindUserByName(name string) UserBasic {
 func FindUserByNameAndPwd(name, password string) UserBasic {
 	user := UserBasic{}
 	utils.DB.Where("name = ? and password = ?", name, password).First(&user)
+
+	//token加密
+	str := fmt.Sprintf("%d", time.Now().Unix())
+	temp := utils.Md5Encode(str)
+	utils.DB.Model(&user).Where("id = ?", user.ID).Update("identity", temp)
 	return user
 }
 
