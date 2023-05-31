@@ -191,6 +191,7 @@ func SendMsg(c *gin.Context) {
 		err = ws.Close()
 		if err != nil {
 			fmt.Print(err)
+			return
 		}
 	}(ws)
 	MsgHandler(ws, c)
@@ -210,4 +211,8 @@ func MsgHandler(ws *websocket.Conn, c *gin.Context) {
 		}
 	}
 
+}
+
+func SendUserMsg(c *gin.Context) {
+	models.Chat(c.Writer, c.Request)
 }
