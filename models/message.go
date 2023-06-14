@@ -80,7 +80,7 @@ func Chat(writer http.ResponseWriter, request *http.Request) {
 	//6.完成接受的逻辑
 	go recvProc(node)
 
-	sendMsg(userId, []byte("欢迎进入聊天室"))
+	//sendMsg(userId, []byte("欢迎进入聊天室"))
 }
 
 func sendProc(node *Node) {
@@ -125,7 +125,7 @@ func init() {
 // 完成udp数据发送携程
 func udpSendProc() {
 	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-		IP:   net.IPv4zero,
+		IP:   net.IPv4(192, 168, 1, 102),
 		Port: 3000,
 	})
 	defer conn.Close()
