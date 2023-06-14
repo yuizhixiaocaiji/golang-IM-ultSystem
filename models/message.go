@@ -79,6 +79,7 @@ func Chat(writer http.ResponseWriter, request *http.Request) {
 	go sendProc(node)
 	//6.完成接受的逻辑
 	go recvProc(node)
+
 	sendMsg(userId, []byte("欢迎进入聊天室"))
 }
 
@@ -86,6 +87,7 @@ func sendProc(node *Node) {
 	for {
 		select {
 		case data := <-node.DataQueue:
+			fmt.Println("[ws] sendProc >>>> msg: ", string(data))
 			err :=
 				node.Conn.WriteMessage(websocket.TextMessage, data)
 			if err != nil {
@@ -104,7 +106,7 @@ func recvProc(node *Node) {
 			return
 		}
 		broadMsg(data)
-		fmt.Println("[ws] <<<<<<", data)
+		fmt.Println("[ws] recvProc <<<<<<", string(data))
 	}
 }
 
@@ -117,12 +119,13 @@ func broadMsg(data []byte) {
 func init() {
 	go udpSendProc()
 	go udpRecvProc()
+	fmt.Println("init goroutine")
 }
 
 // 完成udp数据发送携程
 func udpSendProc() {
 	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-		IP:   net.IPv4(192, 168, 1, 104),
+		IP:   net.IPv4zero,
 		Port: 3000,
 	})
 	defer conn.Close()
@@ -133,6 +136,7 @@ func udpSendProc() {
 	for {
 		select {
 		case data := <-udpsendChan:
+			fmt.Println("udpSendProc data : ", string(data))
 			_, err :=
 				conn.Write(data)
 			if err != nil {
@@ -151,8 +155,8 @@ func udpRecvProc() {
 	})
 	if err != nil {
 		fmt.Println(err)
-		return
 	}
+
 	defer conn.Close()
 	for {
 		var buf [512]byte
@@ -161,7 +165,6 @@ func udpRecvProc() {
 			fmt.Println(err)
 			return
 		}
-
 		dispatch(buf[0:n])
 	}
 }
@@ -176,6 +179,7 @@ func dispatch(data []byte) {
 	}
 	switch msg.Type {
 	case 1: //私信
+		fmt.Println("dispatch data : ", string(data))
 		sendMsg(msg.TargetId, data)
 		//case 2://群发
 		//	sendGroupMsg()
@@ -187,6 +191,7 @@ func dispatch(data []byte) {
 }
 
 func sendMsg(userId int64, msg []byte) {
+	fmt.Println("sendMsg >>> userID: ", userId, " msg: ", string(msg))
 	rwLocker.RLock()
 	node, ok := clientMap[userId]
 	rwLocker.RUnlock()
