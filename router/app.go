@@ -13,6 +13,9 @@ func Router() *gin.Engine {
 	docs.SwaggerInfo.BasePath = ""
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
+	//静态资源
+	r.Static("/assets", "assets/")
+
 	r.POST("/searchFriends", service.SearchFriends)
 
 	r.GET("/index", service.GetIndex)

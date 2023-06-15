@@ -26,7 +26,7 @@ func Upload(c *gin.Context) {
 	}
 
 	fileName := fmt.Sprintf("%d%04d%s", time.Now().Unix(), rand.Int31(), suffix)
-	dstFile, err := os.Create("./assets/upload" + fileName)
+	dstFile, err := os.Create("./assets/upload/" + fileName)
 	if err != nil {
 		utils.RespFail(w, err.Error())
 	}
