@@ -75,3 +75,10 @@ func DeleteUser(user *UserBasic) *gorm.DB {
 func UpdateUser(user *UserBasic) *gorm.DB {
 	return utils.DB.Model(user).Updates(UserBasic{Name: user.Name, Password: user.Password, Phone: user.Phone, Email: user.Email})
 }
+
+// FindById 查找某个用户
+func FindById(id uint) UserBasic {
+	user := UserBasic{}
+	utils.DB.Where("id = ?", id).First(&user)
+	return user
+}

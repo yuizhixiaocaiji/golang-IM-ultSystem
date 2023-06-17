@@ -233,3 +233,21 @@ func SearchFriends(c *gin.Context) {
 func Chat(c *gin.Context) {
 	models.Chat(c.Writer, c.Request)
 }
+
+func AddFriend(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Request.FormValue("userId"))
+	targetId, _ := strconv.Atoi(c.Request.FormValue("targetId"))
+
+	code, msg := models.AddFriend(uint(id), uint(targetId))
+
+	//c.JSON(200, gin.H{
+	//	"code":    0,
+	//	"message": "查询好友列表成功",
+	//	"data":    users,
+	//})
+	if code == 0 {
+		utils.RespOk(c.Writer, code, msg)
+	} else {
+		utils.RespFail(c.Writer, msg)
+	}
+}
