@@ -13,8 +13,8 @@ func main() {
 	}
 
 	// 迁移 schema
-	db.AutoMigrate(&models.UserBasic{})
-
+	//db.AutoMigrate(&models.UserBasic{})
+	db.AutoMigrate(&models.Community{})
 	// Create
 	//user := &models.UserBasic{}
 	//user.Name = "一只小菜狗"
