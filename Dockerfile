@@ -1,33 +1,28 @@
-FROM golang:alpine
+FROM golang:1.18 AS build
+
+ADD . /usr/local/go/src/golang-im-ulisystem
+
+WORKDIR /usr/local/go/src/golang-im-ulisystem
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o api_server
+
+FROM alpine:3.12
 
 # 为我们的镜像设置必要的环境变量
-ENV GO111MODULE=on \
-    CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
+ENV GO111MODULE=on
 
-# 移动到工作目录：/build
-WORKDIR /build
+RUN echo "https://mirrors.aliyun.com/alpine/v3.12/main/" > /etc/apk/repositories && \
+    apk update && \
+    apk add ca-certificates && \
+    echo "host: files dns" > /etc/nsswitch.conf && \
+    mkdir -p /www/config
 
-COPY go.mod .
-COPY go.sum .
-RUN go mod download
+WORKDIR /www
 
-# 将代码复制到容器中
-COPY . .
+COPY --from=build /usr/local/go/src/golang-im-ulisystem/api_server /usr/bin/api_server
+ADD ./config /www/config
 
-# 将我们的代码编译成二进制可执行文件 bubble
-RUN go build -o bubble .
+RUN chmod +x /usr/bin/api_server
 
-###################
-# 接下来创建一个小镜像
-###################
-FROM scratch
+ENTRYPOINT ["api_server"]
 
-COPY ./config /config
-
-# 从builder镜像中把/dist/app 拷贝到当前目录
-COPY --from=builder /build/bubble /
-
-# 需要运行的命令
-ENTRYPOINT ["/bubble", "config/app.yml"]
