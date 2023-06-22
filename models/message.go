@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // Message 消息
@@ -17,7 +18,7 @@ type Message struct {
 	gorm.Model
 	FromId   int64  //发送者
 	TargetId int64  //接受者
-	Type     int    //发送类型 1.群聊 2.私聊 3.广播
+	Type     int    //发送类型 1.群聊 2.私聊 3.心跳
 	Media    int    //消息类型 1.文字 2.图片 3.音频
 	Content  string //消息内容
 	Pic      string
@@ -31,9 +32,13 @@ func (table *Message) TableName() string {
 }
 
 type Node struct {
-	Conn      *websocket.Conn
-	DataQueue chan []byte
-	GroupSets set.Interface
+	Conn          *websocket.Conn
+	Addr          string //客户端地址
+	FirstTime     uint64 //首次连接时间
+	HeartbeatTime uint64 //心跳时间
+	LoginTime     uint64 //登录时间
+	DataQueue     chan []byte
+	GroupSets     set.Interface
 }
 
 //映射关系
@@ -64,10 +69,14 @@ func Chat(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	//2.获取conn
+	currentTime := uint64(time.Now().Unix())
 	node := &Node{
-		Conn:      conn,
-		DataQueue: make(chan []byte, 50),
-		GroupSets: set.New(set.ThreadSafe),
+		Conn:          conn,
+		Addr:          conn.RemoteAddr().String(), //客户端地址
+		HeartbeatTime: currentTime,                //心跳时间
+		LoginTime:     currentTime,                //登录时间
+		DataQueue:     make(chan []byte, 50),
+		GroupSets:     set.New(set.ThreadSafe),
 	}
 
 	//3.用户关系
@@ -105,9 +114,23 @@ func recvProc(node *Node) {
 			fmt.Println(err)
 			return
 		}
-		broadMsg(data)
-		fmt.Println("[ws] recvProc <<<<<<", string(data))
+		msg := Message{}
+		//心跳检测 msg.Media == -1 || msg.Type == 3
+		if msg.Type == 3 {
+			currentTime := uint64(time.Now().Unix())
+			node.Heartbeat(currentTime)
+		} else {
+			dispatch(data)
+			broadMsg(data) //todo 将消息广播到局域网
+			fmt.Println("[ws] recvProc <<<<< ", string(data))
+		}
 	}
+}
+
+// Heartbeat 更新用户心跳
+func (node *Node) Heartbeat(currentTime uint64) {
+	node.HeartbeatTime = currentTime
+	return
 }
 
 var udpsendChan chan []byte = make(chan []byte, 1024)
