@@ -120,7 +120,6 @@ func recvProc(node *Node) {
 			currentTime := uint64(time.Now().Unix())
 			node.Heartbeat(currentTime)
 		} else {
-			dispatch(data)
 			broadMsg(data) //todo 将消息广播到局域网
 			fmt.Println("[ws] recvProc <<<<< ", string(data))
 		}
