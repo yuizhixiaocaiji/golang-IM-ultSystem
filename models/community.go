@@ -36,3 +36,23 @@ func LoadCommunity(ownerId uint) ([]*Community, string) {
 	}
 	return data, "查询成功"
 }
+
+func JoinGroup(userId uint, comInfo string) (int, string) {
+	contact := Contact{}
+	contact.OwnerId = userId
+	contact.Type = 2
+	community := Community{}
+
+	utils.DB.Where("id = ? or name = ?", comInfo, comInfo).Find(&community)
+	if community.Name == "" {
+		return -1, "没有找到群"
+	}
+	utils.DB.Where("owner_id = ? and target_id = ? and type = 2", userId, comInfo).Find(&contact)
+	if !contact.CreatedAt.IsZero() {
+		return -1, "已加入过此群"
+	} else {
+		contact.TargetId = community.ID
+		utils.DB.Create(&contact)
+		return 0, "加群成功"
+	}
+}
