@@ -286,7 +286,8 @@ func RedisMsg(userIdA int64, userIdB int64) []string {
 		key = "msg_" + userIdStr + "_" + targetIdStr
 	}
 
-	rels, err := utils.Red.ZRevRange(ctx, key, 0, 10).Result()
+	//rels, err := utils.Red.ZRevRange(ctx, key, 0, 10).Result()
+	rels, err := utils.Red.ZRange(ctx, key, 0, 10).Result()
 	if err != nil {
 		fmt.Println(err) //没有找到
 	}
