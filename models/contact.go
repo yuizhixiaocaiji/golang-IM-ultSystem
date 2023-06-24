@@ -84,3 +84,14 @@ func AddFriend(userId uint, targetId uint) (int, string) {
 	}
 	return -1, "好友id不能为空"
 }
+
+func SearchUserByGroupId(comId uint) []uint {
+	contacts := make([]Contact, 0)
+	objIds := make([]uint, 0)
+
+	utils.DB.Where("target_id = ? and type = 2", comId).Find(&contacts)
+	for _, v := range contacts {
+		objIds = append(objIds, v.OwnerId)
+	}
+	return objIds
+}

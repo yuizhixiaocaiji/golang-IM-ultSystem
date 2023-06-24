@@ -217,6 +217,13 @@ func SendUserMsg(c *gin.Context) {
 	models.Chat(c.Writer, c.Request)
 }
 
+func RedisMsg(c *gin.Context) {
+	userIdA, _ := strconv.Atoi(c.PostForm("userIdA"))
+	userIdB, _ := strconv.Atoi(c.PostForm("userIdB"))
+	res := models.RedisMsg(int64(userIdA), int64(userIdB))
+	utils.RespOkList(c.Writer, "ok", res)
+}
+
 func SearchFriends(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Request.FormValue("userId"))
 
@@ -277,10 +284,10 @@ func CreateCommunity(c *gin.Context) {
 func LoadCommunity(c *gin.Context) {
 	ownerId, _ := strconv.Atoi(c.Request.FormValue("ownerId"))
 
-	data, msg := models.LoadCommunity(uint(ownerId))
+	data, code, msg := models.LoadCommunity(uint(ownerId))
 
-	if len(data) != 0 {
-		utils.RespList(c.Writer, 0, data, msg)
+	if len(data) != 0 || code == 0 {
+		utils.RespList(c.Writer, code, data, msg)
 	} else {
 		utils.RespFail(c.Writer, msg)
 	}

@@ -42,5 +42,7 @@ func Router() *gin.Engine {
 	r.POST("api/contact/loadcommunity", service.LoadCommunity)
 	//加入群聊
 	r.POST("api/contact/joinGroup", service.JoinGroup)
+	//拉取缓存消息
+	r.POST("api/contact/redisMsg", service.RedisMsg)
 	return r
 }

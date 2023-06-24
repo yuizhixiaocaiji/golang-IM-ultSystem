@@ -25,16 +25,30 @@ func CreateCommunity(community Community) (int, string) {
 		fmt.Println(err)
 		return -1, "建群失败"
 	}
+	contact := Contact{}
+	contact.OwnerId = community.OwnerId
+	contact.TargetId = community.ID
+	contact.Type = 2 //群关系
+	if err := utils.DB.Create(&contact).Error; err != nil {
+		return -1, "添加群关系失败"
+	}
 	return 0, "建群成功"
 }
 
-func LoadCommunity(ownerId uint) ([]*Community, string) {
+func LoadCommunity(ownerId uint) ([]*Community, int, string) {
+	contacts := make([]Contact, 0)
+	objIds := make([]uint, 0)
+	utils.DB.Where("owner_id = ? and type = 2", ownerId).Find(&contacts)
+	for _, v := range contacts {
+		objIds = append(objIds, v.TargetId)
+	}
+
 	data := make([]*Community, 10)
-	utils.DB.Where("owner_id = ?", ownerId).Find(&data)
+	utils.DB.Where("id in ?", objIds).Find(&data)
 	for _, v := range data {
 		fmt.Println(v)
 	}
-	return data, "查询成功"
+	return data, 0, "查询成功"
 }
 
 func JoinGroup(userId uint, comInfo string) (int, string) {

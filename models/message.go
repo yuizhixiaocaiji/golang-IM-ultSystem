@@ -1,9 +1,13 @@
 package models
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"ginchat/utils"
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
+	"github.com/spf13/viper"
 	"gopkg.in/fatih/set.v0"
 	"gorm.io/gorm"
 	"net"
@@ -16,15 +20,16 @@ import (
 // Message 消息
 type Message struct {
 	gorm.Model
-	FromId   int64  //发送者
-	TargetId int64  //接受者
-	Type     int    //发送类型 1.群聊 2.私聊 3.心跳
-	Media    int    //消息类型 1.文字 2.图片 3.音频
-	Content  string //消息内容
-	Pic      string
-	Url      string
-	Desc     string
-	Amount   int //其他数字统计
+	UserId     int64  //发送者
+	TargetId   int64  //接受者
+	Type       int    //发送类型 1.群聊 2.私聊 3.心跳
+	Media      int    //消息类型 1.文字 2.图片 3.音频
+	Content    string //消息内容
+	CreateTime uint64 //创建时间
+	Pic        string
+	Url        string
+	Desc       string
+	Amount     int //其他数字统计
 }
 
 func (table *Message) TableName() string {
@@ -88,7 +93,8 @@ func Chat(writer http.ResponseWriter, request *http.Request) {
 	go sendProc(node)
 	//6.完成接受的逻辑
 	go recvProc(node)
-
+	//7.加入在线用户到缓存
+	SetUserOnlineInfo("online_"+id, []byte(node.Addr), time.Duration(viper.GetInt("timeout.RedisOnlineTime"))*time.Hour)
 	//sendMsg(userId, []byte("欢迎进入聊天室"))
 }
 
@@ -115,6 +121,10 @@ func recvProc(node *Node) {
 			return
 		}
 		msg := Message{}
+		err = json.Unmarshal(data, &msg)
+		if err != nil {
+			fmt.Println(err)
+		}
 		//心跳检测 msg.Media == -1 || msg.Type == 3
 		if msg.Type == 3 {
 			currentTime := uint64(time.Now().Unix())
@@ -194,6 +204,7 @@ func udpRecvProc() {
 //后端调度逻辑处理
 func dispatch(data []byte) {
 	msg := Message{}
+	msg.CreateTime = uint64(time.Now().Unix())
 	err := json.Unmarshal(data, &msg)
 	if err != nil {
 		fmt.Println(err)
@@ -203,8 +214,8 @@ func dispatch(data []byte) {
 	case 1: //私信
 		fmt.Println("dispatch data : ", string(data))
 		sendMsg(msg.TargetId, data)
-		//case 2://群发
-		//	sendGroupMsg()
+	case 2: //群发
+		sendGroupMsg(msg.TargetId, data) //发送的群ID ，消息内容
 		//case 3://广播
 		//	sendAllMsg
 		//case 4:
@@ -212,12 +223,80 @@ func dispatch(data []byte) {
 	}
 }
 
+func sendGroupMsg(targetId int64, msg []byte) {
+	userIds := SearchUserByGroupId(uint(targetId))
+	for i := 0; i < len(userIds); i++ {
+		//排除给自己的
+		if targetId != int64(userIds[i]) {
+			sendMsg(int64(userIds[i]), msg)
+		}
+	}
+}
+
 func sendMsg(userId int64, msg []byte) {
-	fmt.Println("sendMsg >>> userID: ", userId, " msg: ", string(msg))
 	rwLocker.RLock()
 	node, ok := clientMap[userId]
 	rwLocker.RUnlock()
-	if ok {
-		node.DataQueue <- msg
+	jsonMsg := Message{}
+	json.Unmarshal(msg, &jsonMsg)
+	ctx := context.Background()
+	targetIdStr := strconv.Itoa(int(userId))
+	userIdStr := strconv.Itoa(int(jsonMsg.UserId))
+	jsonMsg.CreateTime = uint64(time.Now().Unix())
+	r, err := utils.Red.Get(ctx, "online_"+userIdStr).Result()
+	if err != nil {
+		fmt.Println(err) //没有找到
 	}
+	if r != "" {
+		if ok {
+			fmt.Println("sendMsg >>> userID: ", userId, " msg: ", string(msg))
+			node.DataQueue <- msg
+		}
+	}
+	var key string
+	if userId > jsonMsg.UserId {
+		key = "msg_" + userIdStr + "_" + targetIdStr
+	} else {
+		key = "msg_" + targetIdStr + "_" + userIdStr
+	}
+	res, err := utils.Red.ZRevRange(ctx, key, 0, -1).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+	score := float64(cap(res)) + 1
+	ress, e := utils.Red.ZAdd(ctx, key, &redis.Z{score, msg}).Result() //jsonMsg
+	if e != nil {
+		fmt.Println(e)
+	}
+	fmt.Println(ress)
+}
+
+// RedisMsg Redis 获取缓存里面的消息
+func RedisMsg(userIdA int64, userIdB int64) []string {
+	rwLocker.RLock()
+	node, ok := clientMap[userIdA]
+	rwLocker.RUnlock()
+	ctx := context.Background()
+	userIdStr := strconv.Itoa(int(userIdA))
+	targetIdStr := strconv.Itoa(int(userIdB))
+	var key string
+	if userIdA > userIdB {
+		key = "msg_" + targetIdStr + "_" + userIdStr
+	} else {
+		key = "msg_" + userIdStr + "_" + targetIdStr
+	}
+
+	rels, err := utils.Red.ZRevRange(ctx, key, 0, 10).Result()
+	if err != nil {
+		fmt.Println(err) //没有找到
+	}
+	if ok {
+		for _, v := range rels {
+			fmt.Println("sendMsg >>> userID: ", userIdA, " msg:", v)
+			node.DataQueue <- []byte(v)
+		}
+	} else {
+		fmt.Println("读取redisMsg 未登录")
+	}
+	return rels
 }
